@@ -7,6 +7,9 @@
     label_selectors: "{{ k8s_pv_migrator_pvc_label_selectors }}"
   register: persistentvolumeclaims
 
-- name: "K8s Migrate PVs | Filter out PVCs that are already on destiation storage class | {{ _k8s_pv_migrator_namespace }}"
+- name: "K8s Migrate PVs | Filter out PVCs that are already on destination storage class | {{ _k8s_pv_migrator_namespace }}"
   set_fact:
-    pvcs_sources: "{{ persistentvolumeclaims.resources | rejectattr('spec.storageClassName', 'match', k8s_pv_migrator_destination_storageclass) | list}}"
+    pvcs_sources: "{{ pvcs_no_storage_class + pvcs_with_other_storage_class }}"
+  vars:
+    pvcs_no_storage_class: "{{ persistentvolumeclaims.resources | selectattr('spec.storageClassName', 'undefined' )| list }}"
+    pvcs_with_other_storage_class: "{{ persistentvolumeclaims.resources | selectattr('spec.storageClassName', 'defined' ) | rejectattr('spec.storageClassName','match', k8s_pv_migrator_destination_storageclass) | list }}"
